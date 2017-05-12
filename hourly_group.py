@@ -4,12 +4,12 @@ from itertools import chain, izip, repeat, islice
 __author__ = "hemil"
 
 usage = """
-Usage: python hourly_group.py avengers_chat.txt
+Usage: python hourly_group.py avengers_chat.txt,avengers_chat_civil_war.txt
 Will give you the number of messages each user has sent in each hour. Will show how the Civil War played out.
 """
 
 try:
-    file_name = sys.argv[1]
+    file_names = sys.argv[1].split(",")
 except IndexError:
     print usage
     exit(1)
@@ -45,20 +45,21 @@ def populate_analysis_dict(chat_line, analysis_dict):
         else:
             analysis_dict[user_name][hourly_key] += 1
 
-with open(file_name, "r") as chat_file:
-    chats = chat_file.readlines()
-    for chat_line in chats:
-        chat_line = chat_line.decode('utf-8', 'ignore')
-        try:
-            populate_analysis_dict(chat_line, analysis_dict)
-        except IndexError:
-            failed_count += 1
+for file_name in file_names:
+    with open(file_name, "r") as chat_file:
+        chats = chat_file.readlines()
+        for chat_line in chats:
+            chat_line = chat_line.decode('utf-8', 'ignore')
+            try:
+                populate_analysis_dict(chat_line, analysis_dict)
+            except IndexError:
+                failed_count += 1
 
 # generate csv
 users = analysis_dict.keys()
 headers = [val for val in users for _ in (0, 1)]
 
-with open("hourly_analysis_of_{file_name}.csv".format(file_name=file_name), "w+") as f:
+with open("hourly_analysis_of_{file_name}.csv".format(file_name=file_names), "w+") as f:
     f.write(",".join(headers) + "\n")
     for day_night in ["AM", "PM"]:
         for i in xrange(1, 13):
@@ -69,4 +70,4 @@ with open("hourly_analysis_of_{file_name}.csv".format(file_name=file_name), "w+"
                 values.append(key + "," + value_one)
             f.write(",".join(values) + "\n")
 
-print "Ignored: {count} messages due to missing data sanitization.".format(count=count)
+print "Ignored: {count} messages due to missing data sanitization.".format(count=failed_count)
